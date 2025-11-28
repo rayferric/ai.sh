@@ -116,10 +116,8 @@ Output only a Linux shell command to achieve what the user asks for. Never answe
                         f.write("")
                 now_file_fmt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 with open(history_path, "a") as f:
-                    f.write(
-                        f"\n- {now_file_fmt}, at {os.getcwd()}, prompt: '{prompt}'\n"
-                    )
-                    f.write(f"\t{full_cmd}\n")
+                    f.write(f"- {now_file_fmt}, at {os.getcwd()}, prompt: '{prompt}'\n")
+                    f.write(f"\t{full_cmd}\n\n")
         except Exception as e:
             print(f"Request failed: {e}", file=sys.stderr)
 
