@@ -19,6 +19,12 @@ async def main():
     # get current time: "Monday, June 2, 2025, 5:32 PM"
     now = datetime.now().strftime("%A, %B %d, %Y, %-I:%M %p")
 
+    # get username
+    user = os.getenv("USER")
+
+    # get cwd
+    cwd_str = os.getcwd()
+
     # list files in cwd, sort by latest modification date, limit to 5
     files = sorted(
         (
@@ -56,6 +62,9 @@ async def main():
 
     system_prompt = f"""
 [{now}]
+
+Username: {user}
+Current directory: {cwd_str}
 
 Latest in current directory:
 {file_list}
