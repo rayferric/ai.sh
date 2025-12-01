@@ -1,5 +1,4 @@
 import sys
-import yaml
 import os
 import asyncio
 import aiohttp
@@ -12,9 +11,9 @@ CTX_AI_HISTORY_LIMIT = 10
 
 async def main():
     # read config
-    config_path = os.path.join(os.path.dirname(__file__), "ai-sh-config.yaml")
+    config_path = os.path.join(os.path.dirname(__file__), "ai-sh-config.json")
     with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
+        config = json.load(f)
     api_key = config.get("openai_api_key")
     model = config.get("model")
     prompt = " ".join(sys.argv[1:])
