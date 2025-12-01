@@ -15,7 +15,7 @@ All you can get with GitHub CLI / copilot, and more:
 - Python 3
 - Bring your own OpenAI API key!
   https://platform.openai.com/api-keys -> [ai-sh-config.yaml](ai-sh-config.yaml)
-- Supported shells: `bash`, `zsh`, `fish`
+- Supported shells: `bash`, `zsh`
 
 ### Installation
 
