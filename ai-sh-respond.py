@@ -6,6 +6,9 @@ import aiohttp
 import json
 from datetime import datetime
 
+CTX_LISTDIR_LIMIT = 5
+CTX_AI_HISTORY_LIMIT = 10
+
 
 async def main():
     # read config
@@ -16,16 +19,14 @@ async def main():
     model = config.get("model")
     prompt = " ".join(sys.argv[1:])
 
-    # get current time: "Monday, June 2, 2025, 5:32 PM"
+    # extract context for the agent:
+    # - current time: "Monday, June 2, 2025, 5:32 PM"
     now = datetime.now().strftime("%A, %B %d, %Y, %-I:%M %p")
-
-    # get username
+    # - system username
     user = os.getenv("USER")
-
-    # get cwd
+    # - cwd
     cwd_str = os.getcwd()
-
-    # list files in cwd, sort by latest modification date, limit to 5
+    # - files in cwd, sort by latest modification date, limit to CTX_LISTDIR_LIMIT
     files = sorted(
         (
             (f, os.path.getmtime(f))
@@ -34,15 +35,14 @@ async def main():
         ),
         key=lambda x: x[1],
         reverse=True,
-    )[:5]
+    )[:CTX_LISTDIR_LIMIT]
     file_list = "\n".join(
         [
             f"- {name} ({datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')})"
             for name, mtime in files
         ]
     )
-
-    # read ai history
+    # - last suggestions from .ai_history
     history_path = os.path.join(os.path.dirname(__file__), ".ai_history")
     history_str = ""
     if os.path.exists(history_path):
@@ -52,14 +52,14 @@ async def main():
         history_entries = [
             entry.strip() for entry in history.split("\n\n") if entry.strip() != ""
         ]
-        # take last 3 entries
-        history_entries = history_entries[-3:]
-        # stringify
+        # take last CTX_AI_HISTORY_LIMIT entries
+        history_entries = history_entries[-CTX_AI_HISTORY_LIMIT:]
         history_str = "\n".join(history_entries)
     if not history_str:
         history_str = "(no suggestions yet)"
     history_str = history_str.replace("\\n", "\\\\n")
 
+    # assemble system prompt with the context
     system_prompt = f"""
 [{now}]
 
@@ -75,6 +75,7 @@ Your previous suggestions:
 Output only a Linux shell command to achieve what the user asks for. Never answer directly.
 """.strip()
 
+    # query openai
     async with aiohttp.ClientSession() as session:
         try:
             async with session.post(
@@ -107,10 +108,10 @@ Output only a Linux shell command to achieve what the user asks for. Never answe
                         text = data["choices"][0]["delta"].get("content", "")
                         full_cmd += text
 
-                # output to bash
+                # print resulting command (read back by ai.sh bash script)
                 print(full_cmd)
 
-                # append to history with cwd
+                # append a new entry to .ai_history
                 if not os.path.exists(history_path):
                     with open(history_path, "w") as f:
                         f.write("")
