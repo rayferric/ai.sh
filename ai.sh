@@ -28,7 +28,7 @@ function ai() {
         history -s "ai $prompt"
     fi
 
-    cmd=$(python3 "$_AI_SH_ROOT/ai-sh-respond.py" "$prompt")
+    cmd=$(python3 "$_AI_SH_ROOT/ai_sh_generate.py" "$prompt")
     echo "Suggested command:"
     echo -e "\n$cmd\n"
     printf "Press Enter to run, Ctrl+C to abort..."

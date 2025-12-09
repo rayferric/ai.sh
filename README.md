@@ -13,17 +13,16 @@ All you can get with GitHub CLI / copilot, and more:
 ### Requirements
 
 - Python 3
-- Bring your own OpenAI API key!
-  https://platform.openai.com/api-keys -> [ai-sh-config.json](ai-sh-config.json)
+- Bring your own API key!
+  - OpenAI: https://platform.openai.com/api-keys
+  - OpenRouter: https://openrouter.ai/keys
 - Supported shells: `bash`, `zsh`
-
-### Installation
 
 ```sh
 git clone https://github.com/rayferric/ai.sh.git
 echo "source $(pwd)/ai.sh/ai.sh" >> ~/.${SHELL##*/}rc
 source ~/.${SHELL##*/}rc
-nano ./ai.sh/ai-sh-config.json # add your OpenAI API key!
+nano ./ai.sh/ai-sh-config.json # configure provider, API key, and model
 ```
 
 ### First Use Example
@@ -32,7 +31,7 @@ nano ./ai.sh/ai-sh-config.json # add your OpenAI API key!
 ai get current time in tokyo
 ```
 
-### Safety Disclaimer! OpenAI sees:
+### Safety Disclaimer! The provider sees:
 
 - your request
 - system username

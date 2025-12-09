@@ -1,9 +1,9 @@
 import sys
 import os
 import asyncio
-import aiohttp
 import json
 from datetime import datetime
+from ai_sh_api import query_llm
 
 CTX_LISTDIR_LIMIT = 5
 CTX_AI_HISTORY_LIMIT = 10
@@ -14,8 +14,6 @@ async def main():
     config_path = os.path.join(os.path.dirname(__file__), "ai-sh-config.json")
     with open(config_path, "r") as f:
         config = json.load(f)
-    api_key = config.get("openai_api_key")
-    model = config.get("model")
     prompt = " ".join(sys.argv[1:])
 
     # extract context for the agent:
@@ -74,52 +72,35 @@ Your previous suggestions:
 Output only a Linux shell command to achieve what the user asks for. Never answer directly.
 """.strip()
 
-    # query openai
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "stream": True,
-                },
-            ) as resp:
-                if resp.status == 401:
-                    full_cmd = "echo 'OpenAI API key is not provided. Please edit \"ai.sh/ai-sh-config.yaml\".'"
-                    print(full_cmd)
-                    return
+    # query LLM with streaming
+    try:
+        full_cmd = await query_llm(
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            provider=config.get("provider"),
+            api_key=config.get("api_key"),
+            model=config.get("model"),
+        )
 
-                full_cmd = ""
-                async for line in resp.content:
-                    if line.startswith(b"data: "):
-                        data = line[len(b"data: ") :].strip()
-                        if data == b"[DONE]":
-                            break
-                        data = json.loads(data)
-                        text = data["choices"][0]["delta"].get("content", "")
-                        full_cmd += text
+        # print resulting command (read back by ai.sh bash script)
+        print(full_cmd)
 
-                # print resulting command (read back by ai.sh bash script)
-                print(full_cmd)
-
-                # append a new entry to .ai_history
-                if not os.path.exists(history_path):
-                    with open(history_path, "w") as f:
-                        f.write("")
-                now_file_fmt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                with open(history_path, "a") as f:
-                    f.write(f"- {now_file_fmt}, at {os.getcwd()}, prompt: '{prompt}'\n")
-                    f.write(f"\t{full_cmd}\n\n")
-        except Exception as e:
-            print(f"Request failed: {e}", file=sys.stderr)
+        # append a new entry to .ai_history
+        history_content = ""
+        if os.path.exists(history_path):
+            with open(history_path, "r") as f:
+                history_content = f.read().strip()
+        now_file_fmt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        history_content += (
+            f"\n\n- {now_file_fmt}, at {os.getcwd()}, prompt: '{prompt}'\n\t{full_cmd}"
+        )
+        with open(history_path, "w") as f:
+            f.write(history_content.strip())
+    except PermissionError as e:
+        full_cmd = f"echo '{str(e)}'"
+        print(full_cmd)
+    except Exception as e:
+        print(f"Request failed: {e}", file=sys.stderr)
 
 
 asyncio.run(main())
